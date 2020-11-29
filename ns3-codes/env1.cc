@@ -49,7 +49,7 @@ shutdown some prints
 #include "ns3/config-store-module.h"
 #include "ns3/traffic-control-module.h"
 
-using namespace ns3;
+using namespace ns3; 
 using namespace std;
 
 NS_LOG_COMPONENT_DEFINE ("DrlEnv");
