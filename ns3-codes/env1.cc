@@ -271,9 +271,9 @@ DrlRouting::DrlRouting()
   pathNum=0;
   sessionNum=0;
   linkDelay="1ms";
-  stopTime=100;//stop time of this simulation
+  stopTime=100;//stop time of this simulation   // hesy: 这里应该是s为单位把
   lastSec=0;
-  upTime=500;//interval between two adjacent updates, i.e. schedulings
+  upTime=500;//interval between two adjacent updates, i.e. schedulings   // 这里是ms单位
   data=new uint8_t[4000];//new a data block
   server_fd = -1;
   client_fd = -1;
@@ -368,7 +368,7 @@ string doubleToString(double d)
   return "Error";
 }
 
-double stringToDouble(string str)
+double stringToDouble(string str)       //! record iostream usage
 {
   std::istringstream is(str);
   double d; 
@@ -698,11 +698,11 @@ void DrlRouting::initSocket()
       srcSock->Bind(beg);
       InetSocketAddress dst=InetSocketAddress(addrEnd, port);
       endSock->Bind(dst);
-      endSock->SetRecvCallback(MakeCallback(&recvCallback));//call a function when recieving a packet       //TODO! 主要是这里
+      endSock->SetRecvCallback(MakeCallback(&recvCallback));//call a function when recieving a packet       
       srcSock->Connect(dst);
       //endSock->Connect(beg);
       Ptr<Packet> packet=Create<Packet>(1024);//test packet
-      Simulator::Schedule(Seconds(1.0), &UdpSend, srcSock, packet, i, j); //TODO! 主要是这里
+      Simulator::Schedule(Seconds(1.0), &UdpSend, srcSock, packet, i, j);
       srcSocks.push_back(srcSock);
       endSocks.push_back(endSock);
     }
@@ -712,7 +712,7 @@ void DrlRouting::initSocket()
   }
   return;
 }
-void DrlRouting::initPyConnect()
+void DrlRouting::initPyConnect()    //! 利用进程通信交互信息，后续可以学习一下
 {
   if(!enableFlag) return;
   //server_fd client_fd
@@ -911,16 +911,16 @@ void DrlRouting::randSendData(int iSession, uint8_t *data)//size is the total am
     //dataRate_b = dataRate_b*(1.2);
   }
   if(dataRate_b==0) return;
-  double unit_t = 0.001;//s
-  double lamda = dataRate_b*unit_t/(realPacSize*8);
-  double micros=1000*ExpDstrib->GetValue(1/lamda, 1/lamda*5);
+  double unit_t = 0.001;//s ( transform micro-second into seconds )
+  double lamda = dataRate_b*unit_t/(realPacSize*8);     // 平均到达速率:packets/ms
+  double micros=1000*ExpDstrib->GetValue(1/lamda, 1/lamda*5); //ms ; arg: mean and maxValue ; 获取包的下一次到达间隔
   
   #elif 0//author's method
   double dataRate_mb=sendRates[iSession].GetBitRate()/1000000;
   double micros=(double)realPacSize*8/dataRate_mb;
   int ns=micros*1000;
   ns=ExpDstrib->GetInteger(ns, ns*1.2);//??????
-  micros=(double)ns/1000.0;
+  micros=(double)ns/1000.0;  // hesy: 无法理解这里为什么要转来转去，是为了精度的原因么
   #endif
   
   Time tNext(MicroSeconds(micros));
@@ -1493,17 +1493,17 @@ void DrlRouting::saveToFile(vector<vector<int>> pacNos, vector<vector<double>> d
 
   return ;
 }
-void UdpSend(Ptr<Socket> sock, Ptr<Packet> packet, int sess, int path)
+void UdpSend(Ptr<Socket> sock, Ptr<Packet> packet, int sess, int path)  //?path arg not used
 {
   myTag tag;
   tag.SetValue1(Simulator::Now().GetSeconds());
   tag.SetValue2((uint16_t)sess);
-  tag.SetValue3(0);
+  tag.SetValue3(0);     // queue size inited to be 0
   
   packet->AddPacketTag(tag); 
   sock->Send(packet);
 }
-void recvCallback(Ptr<Socket> socket)
+void recvCallback(Ptr<Socket> socket)   //done. get info from packet tag (sending time ,packet size, queue size )  //! 感觉应该ns3底层代码有变动
 {
   Address address;
   Ptr<Packet> packet=socket->RecvFrom(address);
@@ -1514,7 +1514,7 @@ void recvCallback(Ptr<Socket> socket)
   uint16_t qSize = tag.GetValue3();
   double recvTime=Simulator::Now().GetSeconds();
   double pacSize=packet->GetSize();
-  socket->thrs.push_back(pacSize);
+  socket->thrs.push_back(pacSize);      // TODO? UDP socket 还有这个参数么。。。还是自己加的？
   socket->dels.push_back(recvTime-sendTime);
   socket->qSizes.push_back(qSize);
   Address sendaddr;
@@ -1525,7 +1525,7 @@ void recvCallback(Ptr<Socket> socket)
 }
 
 
-/*set value functions*/
+/*set value functions*/     // done 
 void DrlRouting::setErrp(double err)
 {
   err_p=err;
@@ -1580,7 +1580,7 @@ void DrlRouting::meanRatio()    //done
   }
 }
 
-void DrlRouting::randRatio()
+void DrlRouting::randRatio()    // done
 {
   int sn=sRatios.size();
   for(int i=0; i<sn; i++){
