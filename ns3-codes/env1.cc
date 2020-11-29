@@ -146,7 +146,7 @@ private:
   vector<NetDeviceContainer> spDevices2;//for maximum utilization compute
   Ptr<RateErrorModel> errModel;
   vector< vector< Ptr<NetDevice> > > slDevices;
-  int srcTopoNode[1000][50];//at most 500 nodes
+  int srcTopoNode[1000][50];//at most 500 nodes     
   vector<pair<int,int>> srcEdges;
   vector<vector<uint32_t>> totalRxBytesV;
   vector<vector<uint32_t>> dropPacketsV;
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
   uint32_t seed=1;
   printEnable0=false;//debug now:remote server
   printEnable1=false;
-  enableFlag=true;//for socket now
+  inputKite=true;//forinputKite socket now
   burstFlag=false;
   failureFlag=false;
 
@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
   cmd.AddValue ("packetsize", "KB", packetSize);
   cmd.AddValue ("ecn", "ecn threshold", ECNqThr);
   cmd.AddValue ("serverport", "server port", serverPort);
-  cmd.AddValue ("burstflag", "burst flag", burstFlag);
+  cmd.AddValue ("burstflag", "burst flag", burstFlag);  //! hesy :Set to be true
   cmd.AddValue ("failureflag", "failure flag", failureFlag);
   cmd.Parse(argc, argv);
   Config::SetDefault ("ns3::Queue::Mode", StringValue ("QUEUE_MODE_PACKETS"));
@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
   Config::SetDefault ("ns3::Queue::MaxPackets", UintegerValue(50));
   Config::SetDefault("ns3::UdpSocket::RcvBufSize", UintegerValue(10000000));
 
-  SeedManager::SetSeed(seed);
+  SeedManager::SetSeed(seed);       //? difference
   SeedManager::SetRun(seed);
 
   string TXT = ".txt";
@@ -415,22 +415,22 @@ void DrlRouting::addPathsFromFile()
   in.getline(buffer, 500);
   string cap(buffer);
   cap.append("Mbps");//link capacity
-  while(!in.eof()){
+  while(!in.eof()){ 
     in.getline(buffer, 500);
     if(buffer[0] == 's') break;//"succeed" means the end of paths
     string str(buffer);
     vector<int> vec;
     unsigned int start=0;
     unsigned int pos=0;
-    do{
+    do{ // process string via seperation of ","
       pos=str.find_first_of(',', start);//search the first ',' from start and return the index of ','
       int num=atoi(str.substr(start, pos-start).c_str());
       vec.push_back(num);
       start=pos+1;
     }while(pos<500);
-    res.push_back(vec);
+    res.push_back(vec); // res restores path
   }
-  in.getline(buffer, 500);//send rates of the sessions
+  in.getline(buffer, 500);//send rates of the sessions      //? 所以目前是两个session of 10Mbps?
   string str(buffer);
   NS_LOG_FUNCTION("session send rates: " << str);
   vector<string> v_sendRate;
@@ -473,15 +473,15 @@ void DrlRouting::addPathsFromFile()
   }
   meanRatio();//init sRatios by splitting evenly, i.e. 1.0/pathNum
 }
-void DrlRouting::addPath(vector<int> pPath_, double ratio_)//init sPaths and sRatios
+void DrlRouting::addPath(vector<int> pPath_, double ratio_)//init sPaths and sRatios  //not done
 {
   int size=pPath_.size();
   if(size<2) return;//if path length is 1, return directly
   vector<int> path_;
-  for(int i=0; i<size; i++) path_.push_back(pPath_[i]);
+  for(int i=0; i<size; i++) path_.push_back(pPath_[i]);     // 复制出来
   int iSrc=path_[0];
   int iEnd=path_[size-2];//why size-2?? The last node is host!!!
-  for(unsigned int i=0; i<sPaths.size(); i++){
+  for(unsigned int i=0; i<sPaths.size(); i++){  // skip here at first due to sPaths.size() is 0
     int pathNum_=sPaths[i].size();
     for(int j=0; j<pathNum_; j++){
       int nodeNum_=sPaths[i][j].size();
@@ -493,7 +493,7 @@ void DrlRouting::addPath(vector<int> pPath_, double ratio_)//init sPaths and sRa
     }
   }
   vector<vector<int>> sPath;
-  sPath.push_back(path_);
+  sPath.push_back(path_);   //?! 很奇怪，sPath明明只有一条...  还是需要debug一下
   sPaths.push_back(sPath);
   vector<double> sRatio;
   sRatio.push_back(ratio_);
@@ -644,7 +644,7 @@ void DrlRouting::initAddrs()
   }
   return;
 }
-void DrlRouting::initStaticRoute()
+void DrlRouting::initStaticRoute()  //! 设置静态路由
 {
   NS_LOG_FUNCTION("initStaticRoute()");
   for(int i=0; i<nodeNum; i++){
@@ -698,11 +698,11 @@ void DrlRouting::initSocket()
       srcSock->Bind(beg);
       InetSocketAddress dst=InetSocketAddress(addrEnd, port);
       endSock->Bind(dst);
-      endSock->SetRecvCallback(MakeCallback(&recvCallback));//call a function when recieving a packet
+      endSock->SetRecvCallback(MakeCallback(&recvCallback));//call a function when recieving a packet       //TODO! 主要是这里
       srcSock->Connect(dst);
       //endSock->Connect(beg);
       Ptr<Packet> packet=Create<Packet>(1024);//test packet
-      Simulator::Schedule(Seconds(1.0), &UdpSend, srcSock, packet, i, j);
+      Simulator::Schedule(Seconds(1.0), &UdpSend, srcSock, packet, i, j); //TODO! 主要是这里
       srcSocks.push_back(srcSock);
       endSocks.push_back(endSock);
     }
@@ -1558,18 +1558,18 @@ void DrlRouting::setPacketSize(int size)
 {
   packetSize=size;
 }
-void DrlRouting::setCap(string rate)
+void DrlRouting::setCap(string rate) //done
 {
   cap=DataRate(rate.c_str());
 }
-void DrlRouting::setSendRate(vector<string> rates)
+void DrlRouting::setSendRate(vector<string> rates) // done
 {
   for(unsigned int i=0; i<rates.size(); i++){
     DataRate rate=DataRate(rates[i].c_str());
     sendRates.push_back(rate);
   }
 }
-void DrlRouting::meanRatio()
+void DrlRouting::meanRatio()    //done
 {
   int sn=sRatios.size();
   for(int i=0; i<sn; i++){
