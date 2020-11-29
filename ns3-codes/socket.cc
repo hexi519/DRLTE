@@ -18,7 +18,7 @@
  *
  * Authors: George F. Riley<riley@ece.gatech.edu>
  *          Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
- */
+ */ 
 
 #ifndef NS3_SOCKET_H
 #define NS3_SOCKET_H
